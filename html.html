@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Fertilizer Optimizer</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #43cea2, #185a9d);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      width: 350px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 15px;
+      color: #333;
+      font-size: 22px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      font-size: 16px;
+    }
+    input, select {
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus {
+      border-color: #185a9d;
+      outline: none;
+      box-shadow: 0 0 5px rgba(24, 90, 157, 0.5);
+    }
+    button {
+      background: #28a745;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #218838;
+    }
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Smart Fertilizer Optimizer</h2>
+    <input id="soilPh" type="text" placeholder="Soil pH Level">
+    <input id="nitrogen" type="text" placeholder="Nitrogen Level">
+    <input id="phosphorus" type="text" placeholder="Phosphorus Level">
+    <input id="potassium" type="text" placeholder="Potassium Level">
+    <select id="cropType">
+      <option value="">Select Crop Type</option>
+      <option value="wheat">Wheat</option>
+      <option value="corn">Corn</option>
+      <option value="rice">Rice</option>
+    </select>
+    <select id="citySelect">
+      <option value="">Select Telangana City</option>
+      <option value="17.3616,78.4747">Hyderabad</option>
+      <option value="17.9784,79.5941">Warangal</option>
+      <option value="18.6725,78.0941">Nizamabad</option>
+      <option value="18.4386,79.1288">Karimnagar</option>
+      <option value="17.2473,80.1514">Khammam</option>
+      <option value="16.7482,77.9972">Mahbubnagar</option>
+      <option value="17.0535,79.2671">Nalgonda</option>
+    </select>
+    <button id="submitBtn">Get Fertilizer Recommendation</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+  document.getElementById("submitBtn").addEventListener("click", async () => {
+    const soilPh = parseFloat(document.getElementById("soilPh").value);
+    const nitrogen = parseFloat(document.getElementById("nitrogen").value);
+    const phosphorus = parseFloat(document.getElementById("phosphorus").value);
+    const potassium = parseFloat(document.getElementById("potassium").value);
+    const cropType = document.getElementById("cropType").value;
+    const cityCoords = document.getElementById("citySelect").value;
+    const resultDiv = document.getElementById("result");
+
+    if (
+      isNaN(soilPh) || isNaN(nitrogen) || isNaN(phosphorus) || isNaN(potassium) ||
+      !cropType || !cityCoords
+    ) {
+      resultDiv.innerText = "❗ Please fill in all fields correctly.";
+      resultDiv.style.color = "red";
+      return;
+    }
+
+    const [lat, lon] = cityCoords.split(",");
+
+    resultDiv.innerText = "⏳ Fetching weather data...";
+
+    try {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+      const data = await res.json();
+      const temp = data.current_weather?.temperature;
+
+      if (!temp && temp !== 0) throw new Error("Weather not available");
+
+      let recommendation = "";
+
+      // pH suggestions
+      if (soilPh < 5.5) recommendation += "🔧 Add lime to increase pH. ";
+      else if (soilPh > 7.5) recommendation += "🧪 Add sulfur to lower pH. ";
+
+      // Nitrogen logic
+      if (nitrogen < 20) recommendation += "🌱 Add nitrogen-rich fertilizer (Urea). ";
+      else if (nitrogen > 50) recommendation += "🛑 Reduce nitrogen: Avoid over-fertilizing, grow legumes, or apply carbon-rich compost. ";
+
+      // Phosphorus logic
+      if (phosphorus < 20) recommendation += "🧬 Add phosphorus fertilizer. ";
+      else if (phosphorus > 50) recommendation += "⚠️ High phosphorus: Avoid phosphorus fertilizers, plant phosphorus-hungry crops. ";
+
+      // Potassium logic
+      if (potassium < 20) recommendation += "🧂 Add potassium fertilizer. ";
+      else if (potassium > 50) recommendation += "⚠️ Reduce potassium: Use water flush techniques or plant potassium-absorbing crops. ";
+
+      // Temperature suggestions
+      if (temp < 15) recommendation += "❄️ It's cold. Consider insulation. ";
+      else if (temp > 35) recommendation += "🔥 Hot weather: use mulch to retain moisture. ";
+
+      if (recommendation === "") recommendation = "✅ Conditions are optimal!";
+
+      resultDiv.style.color = "green";
+      resultDiv.innerText = `🌡 Temperature: ${temp}°C\n\n${recommendation}`;
+    } catch (e) {
+      console.error(e);
+      resultDiv.style.color = "red";
+      resultDiv.innerText = "❌ Failed to fetch weather. Try a different city.";
+    }
+  });
+</script>
+
+</body>
+</html>
